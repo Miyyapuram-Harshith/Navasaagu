@@ -3,15 +3,19 @@ import { DashboardLayout } from '../components/layout/DashboardLayout';
 import GoogleFarmMap from '../components/map/GoogleFarmMap';
 import { getFarms, saveFarm } from '../utils/storage';
 import type { FarmProfile, Coordinates } from '../types/farm';
-import { Map as MapIcon, Radio, Leaf, CloudRain, AlertTriangle, Droplets, Battery, Cpu } from 'lucide-react';
+import { Map as MapIcon, Radio, Leaf, CloudRain, AlertTriangle, Droplets, Battery, Cpu, Info, Thermometer } from 'lucide-react';
 import { cn } from '../components/layout/DashboardLayout';
 import { Marker } from '@react-google-maps/api';
+import { useSimulation } from '../store/SimulationContext';
+import { SimulationControlPanel } from '../components/dashboard/SimulationControlPanel';
 
 const FarmMap = () => {
   const [activeFarm, setActiveFarm] = useState<FarmProfile | null>(null);
-  const [activeLayer, setActiveLayer] = useState<'sensors' | 'risk' | 'none'>('sensors');
+  const [activeLayer, setActiveLayer] = useState<'sensors' | 'risk' | 'none'>('risk');
   const [isDefiningNew, setIsDefiningNew] = useState(false);
   const [selectedSensor, setSelectedSensor] = useState<Coordinates | null>(null);
+  
+  const { state } = useSimulation();
 
   useEffect(() => {
     const farms = getFarms();
@@ -73,6 +77,9 @@ const FarmMap = () => {
             </button>
           )}
         </div>
+
+        {/* SIMULATION CONTROL PANEL FOR JURY */}
+        <SimulationControlPanel />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-[500px]">
           
@@ -147,23 +154,23 @@ const FarmMap = () => {
                 <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-sm mb-4">
                   <div className="bg-gray-50 p-2 rounded-lg">
                     <span className="text-xs text-gray-400 block">Temp</span>
-                    <span className="font-bold text-gray-800">28.4°C</span>
+                    <span className="font-bold text-gray-800">{state.temperature}°C</span>
                   </div>
                   <div className="bg-gray-50 p-2 rounded-lg">
                     <span className="text-xs text-gray-400 block">Humidity</span>
-                    <span className="font-bold text-gray-800">71%</span>
+                    <span className="font-bold text-gray-800">{state.humidity}%</span>
                   </div>
                   <div className="bg-gray-50 p-2 rounded-lg">
                     <span className="text-xs text-gray-400 block">Rain</span>
-                    <span className="font-bold text-blue-600">2.4 mm</span>
+                    <span className="font-bold text-blue-600">{state.rainfall} mm</span>
                   </div>
                   <div className="bg-gray-50 p-2 rounded-lg">
                     <span className="text-xs text-gray-400 block">Soil</span>
-                    <span className="font-bold text-blue-500">61%</span>
+                    <span className="font-bold text-blue-500">{state.soilMoisture}%</span>
                   </div>
                   <div className="bg-gray-50 p-2 rounded-lg">
                     <span className="text-xs text-gray-400 block">Wind</span>
-                    <span className="font-bold text-gray-800">11.8 km/h</span>
+                    <span className="font-bold text-gray-800">{state.windSpeed} km/h</span>
                   </div>
                   <div className="bg-gray-50 p-2 rounded-lg flex flex-col justify-center">
                     <div className="flex items-center gap-1 text-xs text-green-600 font-semibold">
@@ -199,12 +206,22 @@ const FarmMap = () => {
                   
                   <div className="flex items-center justify-between mb-6 pb-6 border-b border-gray-100">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center border-4 border-white shadow-sm">
-                        <span className="font-bold text-agri-green">92</span>
+                      <div className={cn(
+                        "w-12 h-12 rounded-full flex items-center justify-center border-4 border-white shadow-sm transition-colors duration-500",
+                        state.farmHealth > 80 ? "bg-green-100 text-green-700" :
+                        state.farmHealth > 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"
+                      )}>
+                        <span className="font-bold text-lg">{state.farmHealth}</span>
                       </div>
                       <div>
                         <div className="font-bold text-gray-800">Farm Health</div>
-                        <div className="text-xs text-green-600 font-medium">Excellent condition</div>
+                        <div className={cn(
+                          "text-xs font-medium",
+                          state.farmHealth > 80 ? "text-green-600" :
+                          state.farmHealth > 60 ? "text-yellow-600" : "text-red-600"
+                        )}>
+                          {state.farmHealth > 80 ? 'Excellent condition' : state.farmHealth > 60 ? 'Moderate stress' : 'Critical condition'}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -212,38 +229,60 @@ const FarmMap = () => {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 text-gray-600">
+                        <Thermometer className="w-4 h-4" /> Temperature
+                      </div>
+                      <span className="font-bold text-red-500">{state.temperature}°C</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-gray-600">
                         <CloudRain className="w-4 h-4" /> Rain Probability
                       </div>
-                      <span className="font-bold text-blue-600">68%</span>
+                      <span className="font-bold text-blue-600">{state.rainProbability}%</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 text-gray-600">
                         <Droplets className="w-4 h-4" /> Soil Moisture
                       </div>
-                      <span className="font-bold text-blue-500">61%</span>
+                      <span className="font-bold text-blue-500">{state.soilMoisture}%</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 text-gray-600">
                         <AlertTriangle className="w-4 h-4" /> Crop Risk
                       </div>
-                      <span className="font-bold text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded">Moderate</span>
+                      <span className={cn(
+                        "font-bold px-2 py-0.5 rounded text-xs",
+                        state.cropRisk === 'LOW' ? "bg-green-50 text-green-600" :
+                        state.cropRisk === 'MEDIUM' ? "bg-yellow-50 text-yellow-600" : "bg-red-50 text-red-600"
+                      )}>{state.cropRisk}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-3xl p-6 text-white shadow-lg relative overflow-hidden">
+                <div className={cn(
+                  "rounded-3xl p-6 text-white shadow-lg relative overflow-hidden transition-colors duration-500",
+                  state.scenario === 'HEAVY_RAIN' ? "bg-gradient-to-br from-blue-700 to-indigo-900" :
+                  state.scenario === 'HEAT_WAVE' ? "bg-gradient-to-br from-red-600 to-orange-800" :
+                  state.scenario === 'DROUGHT' ? "bg-gradient-to-br from-orange-600 to-yellow-800" :
+                  "bg-gradient-to-br from-agri-green to-agri-dark"
+                )}>
                   <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3"></div>
-                  <h3 className="text-xs font-bold text-blue-200 uppercase tracking-wider mb-2 relative z-10">WHAT SHOULD I DO?</h3>
+                  <h3 className="text-xs font-bold text-white/70 uppercase tracking-wider mb-2 relative z-10">AI COPILOT RECOMMENDATION</h3>
                   
                   <div className="relative z-10 mt-3">
                     <div className="flex items-start gap-3 mb-3">
-                      <CloudRain className="w-6 h-6 text-blue-200 shrink-0" />
-                      <p className="font-medium text-blue-50">Rain is likely within 18 hours.</p>
+                      <Info className="w-6 h-6 text-white/80 shrink-0" />
+                      <p className="font-medium text-white/90">{state.irrigationReason}</p>
                     </div>
-                    <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                    <div className="bg-black/20 backdrop-blur-sm rounded-xl p-4 border border-white/10">
                       <p className="font-bold text-lg leading-tight">
-                        Postpone irrigation and inspect drainage channels.
+                        {state.aiRecommendation}
                       </p>
+                      <div className="mt-3 flex items-center gap-2 text-xs font-bold text-white/70 uppercase tracking-wider">
+                        <span>Irrigation: </span>
+                        <span className={state.irrigationRecommended ? "text-green-300" : "text-red-300"}>
+                          {state.irrigationRecommended ? "RECOMMENDED" : "NOT RECOMMENDED"}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>

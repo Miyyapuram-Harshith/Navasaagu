@@ -7,19 +7,23 @@ import AIAssistant from './pages/AIAssistant';
 import FarmMap from './pages/FarmMap';
 import Resources from './pages/Resources';
 
+import { SimulationProvider } from './store/SimulationContext';
+
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/dashboard/farm" element={<FarmMap />} />
-        <Route path="/dashboard/simulator" element={<Simulator />} />
-        <Route path="/dashboard/weather" element={<Weather />} />
-        <Route path="/dashboard/ai" element={<AIAssistant />} />
-        <Route path="/dashboard/resources" element={<Resources />} />
-      </Routes>
-    </Router>
+    <SimulationProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard/farm" element={<FarmMap />} />
+          <Route path="/dashboard/simulator" element={<Simulator />} />
+          <Route path="/dashboard/weather" element={<Weather />} />
+          <Route path="/dashboard/ai" element={<AIAssistant />} />
+          <Route path="/dashboard/resources" element={<Resources />} />
+        </Routes>
+      </Router>
+    </SimulationProvider>
   );
 }
 

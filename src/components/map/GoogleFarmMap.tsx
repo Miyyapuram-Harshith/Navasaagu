@@ -8,6 +8,8 @@ import {
 } from '@react-google-maps/api';
 import type { Coordinates } from '../../types/farm';
 import { Navigation, MapPin, X, RotateCcw, Save } from 'lucide-react';
+import { useSimulation } from '../../store/SimulationContext';
+import { cn } from '../layout/DashboardLayout';
 
 const LIBRARIES: ("places" | "drawing" | "geometry")[] = ['places', 'drawing', 'geometry'];
 
@@ -163,45 +165,86 @@ const GoogleFarmMap: React.FC<GoogleFarmMapProps> = ({
     setArea(0);
   };
 
+  const { state } = useSimulation();
+
   if (!isKeyValid) {
     // Highly visual simulated map for Demo Mode without API Key
     return (
-      <div className="flex flex-col h-full w-full relative bg-green-50 overflow-hidden" style={{ 
+      <div className="flex flex-col h-full w-full relative overflow-hidden transition-colors duration-1000" style={{ 
+        backgroundColor: state.scenario === 'HEAVY_RAIN' ? '#e0f2fe' : 
+                         state.scenario === 'HEAT_WAVE' ? '#ffedd5' :
+                         state.scenario === 'DROUGHT' ? '#fef3c7' : '#f0fdf4',
         backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
         backgroundSize: '24px 24px'
       }}>
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
-          <div className="w-[80%] h-[70%] border-4 border-agri-green bg-agri-green/10 rounded-[40px] rotate-3 transform-gpu"></div>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20 transition-all duration-1000">
+          <div className={cn(
+            "w-[80%] h-[70%] border-4 rounded-[40px] rotate-3 transform-gpu",
+            state.scenario === 'HEAVY_RAIN' ? "border-blue-600 bg-blue-600/10" :
+            state.scenario === 'HEAT_WAVE' ? "border-red-600 bg-red-600/10" :
+            "border-agri-green bg-agri-green/10"
+          )}></div>
         </div>
         
         <div className="absolute top-4 left-4 bg-white/90 backdrop-blur rounded-xl px-4 py-2 shadow-sm border border-gray-100 flex items-center gap-2">
           <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+            <span className={cn(
+              "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
+              state.sensorStatus === 'ONLINE' ? 'bg-green-400' : 'bg-red-400'
+            )}></span>
+            <span className={cn(
+              "relative inline-flex rounded-full h-2 w-2",
+              state.sensorStatus === 'ONLINE' ? 'bg-green-500' : 'bg-red-500'
+            )}></span>
           </span>
-          <span className="text-xs font-bold text-gray-700">DEMO SATELLITE MODE</span>
+          <span className="text-xs font-bold text-gray-700">TWIN SYNC: {state.sensorStatus}</span>
         </div>
 
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="relative w-full h-full max-w-2xl max-h-96">
             {/* Fake Farm Boundary */}
-            <div className="absolute inset-0 border-[3px] border-agri-green bg-agri-green/20 rounded-[30px] rotate-2 flex items-center justify-center overflow-hidden">
+            <div className={cn(
+              "absolute inset-0 border-[3px] rounded-[30px] rotate-2 flex items-center justify-center overflow-hidden transition-colors duration-1000",
+              state.scenario === 'HEAVY_RAIN' ? "border-blue-600 bg-blue-600/20" :
+              state.scenario === 'HEAT_WAVE' ? "border-red-600 bg-red-600/20" :
+              "border-agri-green bg-agri-green/20"
+            )}>
               <div className="absolute -inset-10 bg-gradient-to-tr from-transparent via-white/10 to-transparent animate-pulse"></div>
-              <span className="text-agri-green/30 font-bold text-4xl -rotate-12 tracking-widest uppercase">Lakshmi Farm</span>
+              <span className={cn(
+                "font-bold text-4xl -rotate-12 tracking-widest uppercase opacity-30",
+                state.scenario === 'HEAVY_RAIN' ? "text-blue-900" :
+                state.scenario === 'HEAT_WAVE' ? "text-red-900" :
+                "text-agri-green"
+              )}>Lakshmi Farm</span>
             </div>
             
             {/* Fake Sensors */}
-            <div className="absolute top-1/4 left-1/4 w-8 h-8 bg-blue-500 rounded-full border-4 border-white shadow-xl flex items-center justify-center animate-bounce" style={{ animationDuration: '3s' }}>
-              <div className="w-2 h-2 bg-white rounded-full"></div>
-            </div>
-            <div className="absolute bottom-1/3 right-1/4 w-8 h-8 bg-blue-500 rounded-full border-4 border-white shadow-xl flex items-center justify-center animate-bounce" style={{ animationDuration: '4s', animationDelay: '1s' }}>
-              <div className="w-2 h-2 bg-white rounded-full"></div>
-            </div>
+            {state.sensorStatus === 'ONLINE' && (
+              <>
+                <div className="absolute top-1/4 left-1/4 w-8 h-8 bg-blue-500 rounded-full border-4 border-white shadow-xl flex items-center justify-center animate-bounce" style={{ animationDuration: '3s' }}>
+                  <div className="w-2 h-2 bg-white rounded-full"></div>
+                </div>
+                <div className="absolute bottom-1/3 right-1/4 w-8 h-8 bg-blue-500 rounded-full border-4 border-white shadow-xl flex items-center justify-center animate-bounce" style={{ animationDuration: '4s', animationDelay: '1s' }}>
+                  <div className="w-2 h-2 bg-white rounded-full"></div>
+                </div>
+              </>
+            )}
             
             {/* Risk Zone */}
-            <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-yellow-500/20 rounded-tl-full rounded-br-[30px] border-t-2 border-l-2 border-yellow-500/40 flex items-center justify-center">
-               <span className="text-yellow-700/60 font-bold text-xs uppercase tracking-widest mt-8 ml-8">Moisture Stress</span>
-            </div>
+            {state.cropRisk !== 'LOW' && (
+              <div className={cn(
+                "absolute bottom-0 right-0 w-1/2 h-1/2 rounded-tl-full rounded-br-[30px] border-t-2 border-l-2 flex items-center justify-center transition-all duration-1000 animate-in fade-in",
+                state.scenario === 'HEAVY_RAIN' ? "bg-blue-500/30 border-blue-500/50" :
+                "bg-red-500/20 border-red-500/40"
+              )}>
+                 <span className={cn(
+                   "font-bold text-xs uppercase tracking-widest mt-8 ml-8",
+                   state.scenario === 'HEAVY_RAIN' ? "text-blue-900/60" : "text-red-700/60"
+                 )}>
+                   {state.scenario === 'HEAVY_RAIN' ? 'FLOOD RISK' : 'HEAT STRESS'}
+                 </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -209,7 +252,7 @@ const GoogleFarmMap: React.FC<GoogleFarmMapProps> = ({
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-md shadow-2xl rounded-2xl p-4 min-w-[280px] text-center border border-gray-100 flex flex-col items-center">
           <MapPin className="w-6 h-6 text-agri-green mb-1" />
           <h4 className="text-sm font-bold text-gray-800">Warangal, Telangana</h4>
-          <p className="text-xs text-gray-500 mb-2">Simulated geographic region</p>
+          <p className="text-xs text-gray-500 mb-2">Simulated Farm Environment</p>
           <div className="flex gap-4 mt-2 pt-3 border-t border-gray-100 w-full justify-center">
              <div>
                 <div className="text-lg font-bold text-agri-dark">4.2</div>
