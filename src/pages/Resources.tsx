@@ -1,7 +1,7 @@
 import React from 'react';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
 import { BookOpen, ExternalLink, ShieldCheck, MapPin, Droplets } from 'lucide-react';
-import { cn } from '../components/layout/DashboardLayout';
+
 
 const Resources = () => {
   return (

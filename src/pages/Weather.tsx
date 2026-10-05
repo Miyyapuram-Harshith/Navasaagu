@@ -1,6 +1,6 @@
-import React from 'react';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
-import { Cloud, CloudRain, Wind, Thermometer, ArrowRight, Sunrise, Sunset, Umbrella } from 'lucide-react';
+import { Cloud, CloudRain, Wind, Thermometer, Sun, Umbrella } from 'lucide-react';
+import { cn } from '../components/layout/DashboardLayout';
 
 const Weather = () => {
   return (

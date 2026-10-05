@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Leaf, FlaskConical, Cloud, BrainCircuit, Bell, User, Map, BookOpen } from 'lucide-react';
 import { clsx } from 'clsx';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
-import { Map as MapIcon, Layers, Radio, Cpu, Battery, Activity, Search } from 'lucide-react';
+import { Map as MapIcon, Layers, Radio, Cpu, Battery, Activity } from 'lucide-react';
 import { cn } from '../components/layout/DashboardLayout';
 
 const FarmMap = () => {

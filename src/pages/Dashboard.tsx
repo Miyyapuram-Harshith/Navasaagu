@@ -1,6 +1,5 @@
-import React from 'react';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
-import { CloudRain, Thermometer, Wind, Droplets, Sun, AlertTriangle, CheckCircle2, ChevronRight } from 'lucide-react';
+import { CloudRain, Thermometer, Wind, Droplets, Sun, AlertTriangle, CheckCircle2, ChevronRight, Leaf } from 'lucide-react';
 
 const Dashboard = () => {
   return (
