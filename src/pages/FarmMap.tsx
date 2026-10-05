@@ -1,149 +1,282 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
-import { Map as MapIcon, Layers, Radio, Cpu, Battery, Activity } from 'lucide-react';
+import GoogleFarmMap from '../components/map/GoogleFarmMap';
+import { getFarms, saveFarm } from '../utils/storage';
+import type { FarmProfile, Coordinates } from '../types/farm';
+import { Map as MapIcon, Radio, Leaf, CloudRain, AlertTriangle, Droplets, Battery, Cpu } from 'lucide-react';
 import { cn } from '../components/layout/DashboardLayout';
+import { Marker } from '@react-google-maps/api';
 
 const FarmMap = () => {
-  const [activeLayer, setActiveLayer] = useState('sensors');
-  
+  const [activeFarm, setActiveFarm] = useState<FarmProfile | null>(null);
+  const [activeLayer, setActiveLayer] = useState<'sensors' | 'risk' | 'none'>('sensors');
+  const [isDefiningNew, setIsDefiningNew] = useState(false);
+  const [selectedSensor, setSelectedSensor] = useState<Coordinates | null>(null);
+
+  useEffect(() => {
+    const farms = getFarms();
+    if (farms.length > 0) {
+      setActiveFarm(farms[0]); // Load first farm
+    } else {
+      setIsDefiningNew(true);
+    }
+  }, []);
+
+  const handleSaveFarm = (polygon: Coordinates[], areaSqMeters: number, center: Coordinates) => {
+    const newFarm: FarmProfile = {
+      id: Date.now().toString(),
+      name: 'Lakshmi Farm', // Demo name
+      center,
+      polygon,
+      areaAcres: areaSqMeters * 0.000247105,
+      areaHectares: areaSqMeters * 0.0001,
+      areaSqMeters,
+      crop: 'Cotton',
+      season: 'Kharif',
+      irrigation: 'Partial',
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    saveFarm(newFarm);
+    setActiveFarm(newFarm);
+    setIsDefiningNew(false);
+  };
+
+  // Mock sensor location slightly offset from center
+  const getSensorLocation = (center: Coordinates) => ({
+    lat: center.lat + 0.0005,
+    lng: center.lng - 0.0005
+  });
+
   return (
     <DashboardLayout>
-      <div className="max-w-6xl mx-auto space-y-6 h-[calc(100vh-140px)] flex flex-col">
-        <div className="mb-2">
-          <h1 className="text-3xl font-bold text-agri-dark flex items-center gap-3">
-            <MapIcon className="w-8 h-8 text-agri-green" />
-            Farm Intelligence
-          </h1>
+      <div className="max-w-7xl mx-auto space-y-6 flex flex-col min-h-[calc(100vh-100px)] pb-24">
+        
+        <div className="flex justify-between items-end mb-2">
+          <div>
+            <h1 className="text-3xl font-bold text-agri-dark flex items-center gap-3">
+              <MapIcon className="w-8 h-8 text-agri-green" />
+              {activeFarm ? activeFarm.name : 'Find Your Farm'}
+            </h1>
+            {activeFarm && (
+              <p className="text-gray-500 font-medium">
+                {activeFarm.areaAcres.toFixed(2)} acres • {activeFarm.crop}
+              </p>
+            )}
+          </div>
+          {activeFarm && !isDefiningNew && (
+            <button 
+              onClick={() => setIsDefiningNew(true)}
+              className="text-sm font-semibold text-agri-green hover:underline"
+            >
+              + Add Another Farm
+            </button>
+          )}
         </div>
 
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-6 min-h-0">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-[500px]">
           
-          <div className="md:col-span-1 space-y-4 overflow-y-auto pr-2 pb-20 md:pb-0">
-            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-              <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Map Layers</h3>
-              <div className="space-y-2">
-                {[
-                  { id: 'boundary', label: 'Farm Boundary', icon: MapIcon },
-                  { id: 'satellite', label: 'Satellite', icon: Layers },
-                  { id: 'sensors', label: 'IoT Sensors', icon: Radio },
-                  { id: 'risk', label: 'Risk Zones', icon: Activity },
-                ].map(layer => (
-                  <button
-                    key={layer.id}
-                    onClick={() => setActiveLayer(layer.id)}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors",
-                      activeLayer === layer.id 
-                        ? "bg-agri-green text-white" 
-                        : "text-gray-600 hover:bg-gray-50"
-                    )}
-                  >
-                    <layer.icon className="w-4 h-4" />
-                    {layer.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+          {/* MAP AREA */}
+          <div className="lg:col-span-2 bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-sm h-[500px] lg:h-auto relative flex flex-col">
+            <GoogleFarmMap 
+              initialCenter={activeFarm?.center}
+              savedPolygon={isDefiningNew ? undefined : activeFarm?.polygon}
+              onSaveFarm={handleSaveFarm}
+              readOnly={!isDefiningNew}
+            >
+              {/* Sensor Markers when active farm exists */}
+              {!isDefiningNew && activeFarm && activeLayer === 'sensors' && window.google && (
+                <Marker 
+                  position={getSensorLocation(activeFarm.center)} 
+                  icon={{
+                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#3b82f6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 16 16 12 12 8"></polyline><line x1="8" y1="12" x2="16" y2="12"></line></svg>'),
+                    scaledSize: new window.google.maps.Size(32, 32),
+                    anchor: new window.google.maps.Point(16, 16)
+                  }}
+                  onClick={() => setSelectedSensor(getSensorLocation(activeFarm.center))}
+                />
+              )}
+            </GoogleFarmMap>
 
-            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider">Live IoT Station</h3>
-                <span className="flex h-2 w-2 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                </span>
+            {/* Farm Monitoring Toolbar Overlay (if viewing a farm) */}
+            {!isDefiningNew && activeFarm && (
+              <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur-md rounded-xl shadow-lg border border-gray-100 p-2 flex flex-col gap-2">
+                <button 
+                  onClick={() => setActiveLayer(activeLayer === 'sensors' ? 'none' : 'sensors')}
+                  className={cn(
+                    "p-2 rounded-lg transition-colors flex items-center justify-center group relative",
+                    activeLayer === 'sensors' ? "bg-blue-100 text-blue-600" : "hover:bg-gray-100 text-gray-500"
+                  )}
+                >
+                  <Radio className="w-5 h-5" />
+                  <span className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity">IoT Sensors</span>
+                </button>
+                <button 
+                  onClick={() => setActiveLayer(activeLayer === 'risk' ? 'none' : 'risk')}
+                  className={cn(
+                    "p-2 rounded-lg transition-colors flex items-center justify-center group relative",
+                    activeLayer === 'risk' ? "bg-red-100 text-red-600" : "hover:bg-gray-100 text-gray-500"
+                  )}
+                >
+                  <AlertTriangle className="w-5 h-5" />
+                  <span className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity">Risk Map (Simulated)</span>
+                </button>
               </div>
-              
-              <div className="space-y-4">
-                <div className="flex justify-between items-center bg-gray-50 p-3 rounded-xl">
-                  <div className="flex items-center gap-2">
-                    <Cpu className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm font-medium">Raspberry Pi</span>
+            )}
+
+            {/* Sensor Info Popup */}
+            {selectedSensor && (
+              <div className="absolute top-4 right-4 z-10 w-72 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-100 p-5 animate-in fade-in slide-in-from-right-4">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                      <Radio className="w-4 h-4 text-blue-500" />
+                      FIELD STATION
+                    </h3>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                      </span>
+                      <span className="text-[10px] font-bold text-green-600 uppercase">Online</span>
+                    </div>
                   </div>
-                  <span className="text-xs font-bold text-green-600">Online</span>
-                </div>
-                
-                <div className="flex justify-between items-center bg-gray-50 p-3 rounded-xl">
-                  <div className="flex items-center gap-2">
-                    <Battery className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm font-medium">Solar Power</span>
-                  </div>
-                  <span className="text-xs font-bold text-gray-800">87%</span>
+                  <button onClick={() => setSelectedSensor(null)} className="text-gray-400 hover:text-gray-600">×</button>
                 </div>
 
-                <div className="pt-2 border-t border-gray-100">
-                  <div className="text-xs text-gray-400 text-center">Last update: 12s ago</div>
+                <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-sm mb-4">
+                  <div className="bg-gray-50 p-2 rounded-lg">
+                    <span className="text-xs text-gray-400 block">Temp</span>
+                    <span className="font-bold text-gray-800">28.4°C</span>
+                  </div>
+                  <div className="bg-gray-50 p-2 rounded-lg">
+                    <span className="text-xs text-gray-400 block">Humidity</span>
+                    <span className="font-bold text-gray-800">71%</span>
+                  </div>
+                  <div className="bg-gray-50 p-2 rounded-lg">
+                    <span className="text-xs text-gray-400 block">Rain</span>
+                    <span className="font-bold text-blue-600">2.4 mm</span>
+                  </div>
+                  <div className="bg-gray-50 p-2 rounded-lg">
+                    <span className="text-xs text-gray-400 block">Soil</span>
+                    <span className="font-bold text-blue-500">61%</span>
+                  </div>
+                  <div className="bg-gray-50 p-2 rounded-lg">
+                    <span className="text-xs text-gray-400 block">Wind</span>
+                    <span className="font-bold text-gray-800">11.8 km/h</span>
+                  </div>
+                  <div className="bg-gray-50 p-2 rounded-lg flex flex-col justify-center">
+                    <div className="flex items-center gap-1 text-xs text-green-600 font-semibold">
+                      <Battery className="w-3 h-3" /> 92%
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-yellow-600 font-semibold">
+                      <Cpu className="w-3 h-3" /> 87%
+                    </div>
+                  </div>
                 </div>
+                <div className="text-[10px] text-gray-400 text-center animate-pulse">Last updated: 12 seconds ago</div>
               </div>
-            </div>
+            )}
           </div>
 
-          <div className="md:col-span-3 bg-white rounded-3xl border border-gray-200 overflow-hidden relative shadow-sm h-full min-h-[400px]">
-            {/* Mock Map Background */}
-            <div className="absolute inset-0 bg-green-50" style={{ 
-              backgroundImage: 'radial-gradient(#e5e7eb 1px, transparent 1px)',
-              backgroundSize: '20px 20px'
-            }}>
-              {/* Fake farm boundary */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[70%] border-4 border-agri-green/30 bg-agri-green/5 rounded-3xl flex items-center justify-center">
-                <span className="text-agri-green/20 font-bold text-4xl rotate-12">LAKSHMI FARM</span>
-                
-                {/* Simulated markers */}
-                {activeLayer === 'sensors' && (
-                  <>
-                    <div className="absolute top-1/4 left-1/4">
-                      <div className="relative group cursor-pointer">
-                        <div className="w-6 h-6 bg-blue-500 rounded-full border-2 border-white shadow-lg animate-pulse flex items-center justify-center">
-                          <Radio className="w-3 h-3 text-white" />
-                        </div>
-                        <div className="absolute -top-16 -left-1/2 hidden group-hover:block w-32 bg-white rounded-lg shadow-xl p-2 text-xs font-medium z-10">
-                          Moisture: 61% <br/>Temp: 28°C
-                        </div>
+          {/* INTELLIGENCE PANEL */}
+          <div className="lg:col-span-1 space-y-6">
+            
+            {isDefiningNew ? (
+              <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm text-center h-full flex flex-col justify-center items-center">
+                <MapIcon className="w-16 h-16 text-gray-200 mb-4" />
+                <h2 className="text-xl font-bold text-gray-800 mb-2">Define Your Land</h2>
+                <p className="text-gray-500 mb-6">Search for your location, then click "+ Draw My Farm" to map your exact boundary.</p>
+                <div className="bg-green-50 text-green-800 text-sm font-medium px-4 py-3 rounded-xl w-full text-left flex items-start gap-3">
+                  <Leaf className="w-5 h-5 shrink-0 mt-0.5" />
+                  NavaSaagu uses your exact farm boundaries to calculate weather impact and crop feasibility.
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                  <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">FARM STATUS</h3>
+                  
+                  <div className="flex items-center justify-between mb-6 pb-6 border-b border-gray-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center border-4 border-white shadow-sm">
+                        <span className="font-bold text-agri-green">92</span>
+                      </div>
+                      <div>
+                        <div className="font-bold text-gray-800">Farm Health</div>
+                        <div className="text-xs text-green-600 font-medium">Excellent condition</div>
                       </div>
                     </div>
-                    <div className="absolute bottom-1/3 right-1/4">
-                      <div className="relative group cursor-pointer">
-                        <div className="w-6 h-6 bg-blue-500 rounded-full border-2 border-white shadow-lg animate-pulse flex items-center justify-center">
-                          <Radio className="w-3 h-3 text-white" />
-                        </div>
-                        <div className="absolute -top-16 -left-1/2 hidden group-hover:block w-32 bg-white rounded-lg shadow-xl p-2 text-xs font-medium z-10">
-                          Moisture: 58% <br/>Temp: 29°C
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {activeLayer === 'risk' && (
-                  <div className="absolute bottom-0 right-0 w-1/3 h-1/3 bg-red-500/20 rounded-tl-[100px] rounded-br-3xl flex items-center justify-center border-l border-t border-red-500/30">
-                    <span className="text-red-700/50 font-bold text-xs">Low Drainage Risk</span>
                   </div>
-                )}
-              </div>
-            </div>
 
-            {/* Farm Intelligence Popup Mock */}
-            <div className="absolute bottom-6 left-6 right-6 md:right-auto md:w-80 bg-white/95 backdrop-blur-md rounded-2xl p-5 shadow-2xl border border-gray-100">
-              <h4 className="font-bold text-agri-dark mb-1">Lakshmi Farm</h4>
-              <p className="text-sm text-gray-500 mb-4">4.2 acres • Cotton</p>
-              
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <span className="text-xs text-gray-400 block mb-1">Health</span>
-                  <span className="text-sm font-bold text-agri-green">92%</span>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <CloudRain className="w-4 h-4" /> Rain Probability
+                      </div>
+                      <span className="font-bold text-blue-600">68%</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <Droplets className="w-4 h-4" /> Soil Moisture
+                      </div>
+                      <span className="font-bold text-blue-500">61%</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <AlertTriangle className="w-4 h-4" /> Crop Risk
+                      </div>
+                      <span className="font-bold text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded">Moderate</span>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-xs text-gray-400 block mb-1">Soil moisture</span>
-                  <span className="text-sm font-bold text-blue-500">61%</span>
+
+                <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-3xl p-6 text-white shadow-lg relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3"></div>
+                  <h3 className="text-xs font-bold text-blue-200 uppercase tracking-wider mb-2 relative z-10">WHAT SHOULD I DO?</h3>
+                  
+                  <div className="relative z-10 mt-3">
+                    <div className="flex items-start gap-3 mb-3">
+                      <CloudRain className="w-6 h-6 text-blue-200 shrink-0" />
+                      <p className="font-medium text-blue-50">Rain is likely within 18 hours.</p>
+                    </div>
+                    <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                      <p className="font-bold text-lg leading-tight">
+                        Postpone irrigation and inspect drainage channels.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              
-              <div className="bg-blue-50 text-blue-800 p-3 rounded-xl text-sm font-medium">
-                Recommendation: Monitor rainfall before irrigation.
-              </div>
-            </div>
+
+                <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                  <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Demo Satellite Analysis</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-gray-600 font-medium">Vegetation Health</span>
+                        <span className="font-bold text-gray-800">84%</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-1.5">
+                        <div className="bg-agri-green h-1.5 rounded-full" style={{ width: '84%' }}></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-gray-600 font-medium">Crop Coverage</span>
+                        <span className="font-bold text-gray-800">91%</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-1.5">
+                        <div className="bg-agri-green h-1.5 rounded-full" style={{ width: '91%' }}></div>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-gray-400 mt-2 italic">Data simulated. Awaiting Earth Engine integration.</p>
+                  </div>
+                </div>
+              </>
+            )}
 
           </div>
+
         </div>
       </div>
     </DashboardLayout>
