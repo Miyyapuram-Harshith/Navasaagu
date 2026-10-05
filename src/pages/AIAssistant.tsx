@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
 import { BrainCircuit, Mic, Send, CloudRain, Sprout, Droplets, ShieldAlert, FileText } from 'lucide-react';
 import { cn } from '../components/layout/DashboardLayout';

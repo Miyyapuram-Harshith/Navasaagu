@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
 import { FlaskConical, MapPin, Ruler, Calendar, Sprout, TestTube2, Droplet, ArrowRight, Play, CheckCircle2, AlertCircle } from 'lucide-react';
 import { cn } from '../components/layout/DashboardLayout';

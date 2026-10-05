@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
 import { Map as MapIcon, Layers, Radio, Cpu, Battery, Activity } from 'lucide-react';
 import { cn } from '../components/layout/DashboardLayout';
