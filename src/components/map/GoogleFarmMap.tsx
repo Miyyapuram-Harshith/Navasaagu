@@ -164,16 +164,62 @@ const GoogleFarmMap: React.FC<GoogleFarmMapProps> = ({
   };
 
   if (!isKeyValid) {
+    // Highly visual simulated map for Demo Mode without API Key
     return (
-      <div className="flex flex-col items-center justify-center h-full w-full bg-green-50 border-2 border-dashed border-agri-green/30 rounded-2xl p-8 text-center">
-        <MapPin className="w-16 h-16 text-agri-green/50 mb-4" />
-        <h3 className="text-xl font-bold text-agri-dark mb-2">Google Maps Setup Required</h3>
-        <p className="text-gray-600 max-w-md mb-6">
-          To enable the interactive farm intelligence map, please add your Google Maps API key to the <code className="bg-gray-100 px-2 py-1 rounded">.env</code> file.
-        </p>
-        <div className="bg-white p-4 rounded-xl shadow-sm text-sm text-left border border-gray-100 w-full max-w-md">
-          <p className="font-mono text-gray-500 mb-2">.env</p>
-          <code className="text-blue-600">VITE_GOOGLE_MAPS_API_KEY=your_real_api_key</code>
+      <div className="flex flex-col h-full w-full relative bg-green-50 overflow-hidden" style={{ 
+        backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
+        backgroundSize: '24px 24px'
+      }}>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
+          <div className="w-[80%] h-[70%] border-4 border-agri-green bg-agri-green/10 rounded-[40px] rotate-3 transform-gpu"></div>
+        </div>
+        
+        <div className="absolute top-4 left-4 bg-white/90 backdrop-blur rounded-xl px-4 py-2 shadow-sm border border-gray-100 flex items-center gap-2">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+          </span>
+          <span className="text-xs font-bold text-gray-700">DEMO SATELLITE MODE</span>
+        </div>
+
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="relative w-full h-full max-w-2xl max-h-96">
+            {/* Fake Farm Boundary */}
+            <div className="absolute inset-0 border-[3px] border-agri-green bg-agri-green/20 rounded-[30px] rotate-2 flex items-center justify-center overflow-hidden">
+              <div className="absolute -inset-10 bg-gradient-to-tr from-transparent via-white/10 to-transparent animate-pulse"></div>
+              <span className="text-agri-green/30 font-bold text-4xl -rotate-12 tracking-widest uppercase">Lakshmi Farm</span>
+            </div>
+            
+            {/* Fake Sensors */}
+            <div className="absolute top-1/4 left-1/4 w-8 h-8 bg-blue-500 rounded-full border-4 border-white shadow-xl flex items-center justify-center animate-bounce" style={{ animationDuration: '3s' }}>
+              <div className="w-2 h-2 bg-white rounded-full"></div>
+            </div>
+            <div className="absolute bottom-1/3 right-1/4 w-8 h-8 bg-blue-500 rounded-full border-4 border-white shadow-xl flex items-center justify-center animate-bounce" style={{ animationDuration: '4s', animationDelay: '1s' }}>
+              <div className="w-2 h-2 bg-white rounded-full"></div>
+            </div>
+            
+            {/* Risk Zone */}
+            <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-yellow-500/20 rounded-tl-full rounded-br-[30px] border-t-2 border-l-2 border-yellow-500/40 flex items-center justify-center">
+               <span className="text-yellow-700/60 font-bold text-xs uppercase tracking-widest mt-8 ml-8">Moisture Stress</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Floating Demo Info */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-md shadow-2xl rounded-2xl p-4 min-w-[280px] text-center border border-gray-100 flex flex-col items-center">
+          <MapPin className="w-6 h-6 text-agri-green mb-1" />
+          <h4 className="text-sm font-bold text-gray-800">Warangal, Telangana</h4>
+          <p className="text-xs text-gray-500 mb-2">Simulated geographic region</p>
+          <div className="flex gap-4 mt-2 pt-3 border-t border-gray-100 w-full justify-center">
+             <div>
+                <div className="text-lg font-bold text-agri-dark">4.2</div>
+                <div className="text-[10px] text-gray-400 uppercase font-semibold">Acres</div>
+             </div>
+             <div>
+                <div className="text-lg font-bold text-agri-dark">1.7</div>
+                <div className="text-[10px] text-gray-400 uppercase font-semibold">Hectares</div>
+             </div>
+          </div>
         </div>
       </div>
     );
