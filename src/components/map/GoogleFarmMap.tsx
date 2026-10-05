@@ -29,9 +29,12 @@ const GoogleFarmMap: React.FC<GoogleFarmMapProps> = ({
   readOnly = false,
   children
 }) => {
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+  const isKeyValid = apiKey && apiKey.length > 10 && !apiKey.includes('YourRealKeyGoesHere');
+
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
+    googleMapsApiKey: isKeyValid ? apiKey : '',
     libraries: LIBRARIES
   });
 
@@ -160,7 +163,23 @@ const GoogleFarmMap: React.FC<GoogleFarmMapProps> = ({
     setArea(0);
   };
 
-  if (loadError) return <div className="p-4 text-red-500">Error loading maps</div>;
+  if (!isKeyValid) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full w-full bg-green-50 border-2 border-dashed border-agri-green/30 rounded-2xl p-8 text-center">
+        <MapPin className="w-16 h-16 text-agri-green/50 mb-4" />
+        <h3 className="text-xl font-bold text-agri-dark mb-2">Google Maps Setup Required</h3>
+        <p className="text-gray-600 max-w-md mb-6">
+          To enable the interactive farm intelligence map, please add your Google Maps API key to the <code className="bg-gray-100 px-2 py-1 rounded">.env</code> file.
+        </p>
+        <div className="bg-white p-4 rounded-xl shadow-sm text-sm text-left border border-gray-100 w-full max-w-md">
+          <p className="font-mono text-gray-500 mb-2">.env</p>
+          <code className="text-blue-600">VITE_GOOGLE_MAPS_API_KEY=your_real_api_key</code>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) return <div className="p-4 text-red-500">Error loading maps: {loadError.message}</div>;
   if (!isLoaded) return <div className="p-4 text-gray-500 flex items-center gap-2"><div className="w-4 h-4 border-2 border-agri-green border-t-transparent rounded-full animate-spin"></div> Loading Map...</div>;
 
   const acres = (area * 0.000247105).toFixed(2);
